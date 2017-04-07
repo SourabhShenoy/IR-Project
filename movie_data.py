@@ -42,7 +42,7 @@ class Data:
         lines = f.readlines()
         for line in lines:
             data = line.split("|")
-            new_user = User(int(data[0]),int(data[1]),data[2],data[3],data[4])
+            new_user = User(int(data[0])-1,int(data[1]),data[2],data[3],data[4])
             users.append(new_user)
         return users
 
@@ -59,7 +59,7 @@ class Data:
             for g in self.genres_list:
                 genre[g] = int(data[i])
                 i += 1
-            new_movie = Movie(int(data[0]),data[1],data[2],data[3],genre)
+            new_movie = Movie(int(data[0])-1,data[1],data[2],data[3],genre)
             movies.append(new_movie)
         return movies
 
@@ -73,13 +73,13 @@ class Data:
             genres.append(line[0])
         return genres[:-1]
 
-    def create_rating_matrix(self):
+    def create_rating_matrix(self,rate_matrix):
         r = Rating()
-        rate_matrix = np.zeros((943, 1682))
+        #rate_matrix = np.zeros((943, 1682))
         r.rating_matrix(rate_matrix)
-        print rate_matrix[0]
+        #print rate_matrix[0]
 
 
-d = Data()
-d.create_rating_matrix()
+#d = Data()
+#d.create_rating_matrix()
 
