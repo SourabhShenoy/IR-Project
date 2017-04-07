@@ -16,10 +16,11 @@ class MoviePredict():
         self.users = self.data.user_data()
         self.movies = self.data.movies_data()
         self.genres = self.data.get_genres()
-        self.train = self.data.create_rating_matrix(np.zeros((len(self.users),len(self.movies))))
+        self.train = np.zeros((len(self.users),len(self.movies)))
+        self.data.create_rating_matrix(self.train)
 
     def movieClustering(self):
-        movie_genre = [[]]
+        movie_genre = []
         for m in self.movies:
             mg = []
             for g in self.genres:
@@ -37,7 +38,7 @@ class MoviePredict():
             for m in self.movies:
                 rate = self.train[user.id][m.id]
                 if rate != 0:
-                    genre = self.movie_cluster.labels_[m.id]
+                    genre = self.movie_cluster[m.id]
                     ratings[user.id][genre].append(rate)
 
             for i in range(len(self.genres)):
@@ -73,18 +74,30 @@ class MoviePredict():
 
 
     def guess(self,user,movie,top_n):
-        gid = self.movie_cluster.labels_[movie.id -1]
-        top_similar = np.argsort(self.normRating[user.id-1])[-top_n:]
+        gid = self.movie_cluster[movie -1]
+        top_similar = np.argsort(self.normRating[user-1])[-top_n:]
         s,c = 0,0
         for t in top_similar:
             if self.normRating[t][gid] != 0:
                 s += self.normRating[t][gid]
                 c += 1
 
-        rate = user.avg_rating + float(s)/c
+        rate = self.users[user-1].avg_rating + float(s)/c
         if rate < 1.0:
             return 1.0
         elif rate > 5.0:
             return 5.0
         else:
             return rate
+
+    def load_allData(self):
+        self.load_data()
+        self.movieClustering()
+        self.create_ratingmatrix()
+        self.calculate_avgUserRating()
+        self.normalize_rating()
+        self.calculate_pearsonCC()
+
+
+obj = MoviePredict()
+obj.load_allData()

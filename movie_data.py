@@ -26,7 +26,7 @@ class Rating:
         self.rating = rating
     '''
     def rating_matrix(self,rate_matrix):
-        f = open(".\ml-100k\u.base", "r")
+        f = open(".\ml-100k\u1.base", "r")
         ratings = f.readlines()
         for r in ratings:
             r = r.split("\t")
