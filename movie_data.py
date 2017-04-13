@@ -7,7 +7,7 @@ class User:
         self.occupation = occupation
         self.zipcode = zipcode
         self.avg_rating = 0
-
+        self.pref_genre = []
 
 class Movie:
     def __init__(self,movie_id,name,release_data,imdb_link,genre):
