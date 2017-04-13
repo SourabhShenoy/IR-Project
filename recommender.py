@@ -108,6 +108,21 @@ class MoviePredict():
 
         print "RMSE=",(float(error)/cnt)**0.5
 
+    def decide_usergenre(self,top_n=150,genre_no = 3):
+        for user in self.users:
+            pg = [0]*len(self.genres)
+            res = np.argsort(self.normRating[user.id])[-genre_no:]
+            for r in res:
+                pg[r] += 1
+            top_similar = np.argsort(self.pcs[user.id])[-top_n:]
+            for t in top_similar:
+                res = np.argsort(self.normRating[t])[-genre_no:]
+                for r in res:
+                    pg[r] += 1
+
+            user.pref_genre = np.argsort(pg)[-genre_no:]
+
+
     def load_allData(self):
         self.load_data()
         self.movieClustering()
@@ -115,7 +130,8 @@ class MoviePredict():
         self.calculate_avgUserRating()
         self.normalize_rating()
         self.calculate_pearsonCC()
-        self.get_rmse()
+        # self.get_rmse()
+        self.decide_usergenre()
 
 obj = MoviePredict()
 obj.load_allData()
