@@ -17,7 +17,9 @@ class MoviePredict():
         self.movies = self.data.movies_data()
         self.genres = self.data.get_genres()
         self.train = np.zeros((len(self.users),len(self.movies)))
-        self.data.create_rating_matrix(self.train)
+        self.test = np.zeros((len(self.users), len(self.movies)))
+        self.data.create_rating_matrix(self.train,".\ml-100k\u1.base")
+        self.data.create_rating_matrix(self.test,".\ml-100k\u1.test")
 
     def movieClustering(self):
         movie_genre = []
@@ -57,8 +59,9 @@ class MoviePredict():
     def normalize_rating(self):
         norm = [[[] for j in range(len(self.genres))] for i in range(len(self.users))]
         for user in self.users:
-            for i in range(len(self.genres)):
-                norm[user.id][i] = [x - user.avg_rating for x in self.ratings[user.id]]
+            norm[user.id] = [x - user.avg_rating for x in self.ratings[user.id]]
+            # for i in range(len(self.genres)):
+            #     norm[user.id][i] = [x - user.avg_rating for x in self.ratings[user.id]]
 
         self.normRating = norm
 
@@ -72,23 +75,38 @@ class MoviePredict():
                     rateB = [ x - userB.avg_rating for x in self.ratings[userB.id]]
                     pcs[userA.id][userB.id] = np.dot(rateA,rateB)
 
+        self.pcs = pcs
 
     def guess(self,user,movie,top_n):
-        gid = self.movie_cluster[movie -1]
-        top_similar = np.argsort(self.normRating[user-1])[-top_n:]
+        gid = self.movie_cluster[movie]
+        top_similar = np.argsort(self.pcs[user])[-top_n:]
         s,c = 0,0
         for t in top_similar:
             if self.normRating[t][gid] != 0:
-                s += self.normRating[t][gid]
-                c += 1
+                s += self.normRating[t][gid] * self.pcs[user][t]
+                c += self.pcs[user][t]
 
-        rate = self.users[user-1].avg_rating + float(s)/c
+        rate = self.users[user].avg_rating + float(s)/c
         if rate < 1.0:
             return 1.0
         elif rate > 5.0:
             return 5.0
         else:
             return rate
+
+    def get_rmse(self):
+        error = 0
+        cnt = 0
+        for user in self.users:
+            uid = user.id
+            for mov in self.movies:
+                mid = mov.id
+                if self.test[uid][mid] != 0:
+                    pred = self.guess(uid,mid,150)
+                    error += (pred-self.test[uid][mid]) ** 2
+                    cnt += 1
+
+        print "RMSE=",(float(error)/cnt)**0.5
 
     def load_allData(self):
         self.load_data()
@@ -97,7 +115,7 @@ class MoviePredict():
         self.calculate_avgUserRating()
         self.normalize_rating()
         self.calculate_pearsonCC()
-
+        self.get_rmse()
 
 obj = MoviePredict()
 obj.load_allData()

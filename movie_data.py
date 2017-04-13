@@ -25,8 +25,9 @@ class Rating:
         self.movie_id = movie_id
         self.rating = rating
     '''
-    def rating_matrix(self,rate_matrix):
-        f = open(".\ml-100k\u1.base", "r")
+    def rating_matrix(self,rate_matrix,filename):
+        # f = open(".\ml-100k\u1.base", "r")
+        f = open(filename, "r")
         ratings = f.readlines()
         for r in ratings:
             r = r.split("\t")
@@ -73,10 +74,10 @@ class Data:
             genres.append(line[0])
         return genres[:-1]
 
-    def create_rating_matrix(self,rate_matrix):
+    def create_rating_matrix(self,rate_matrix,filename):
         r = Rating()
         #rate_matrix = np.zeros((943, 1682))
-        r.rating_matrix(rate_matrix)
+        r.rating_matrix(rate_matrix,filename)
         #print rate_matrix[0]
 
 
