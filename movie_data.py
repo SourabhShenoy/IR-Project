@@ -36,6 +36,7 @@ class Rating:
 class Data:
     def __init__(self):
         self.genres_list = self.get_genres()
+        self.genre_corr = [[0 for col in range(19)] for row in range(19)]
 
     def user_data(self):
         users = []
@@ -80,7 +81,20 @@ class Data:
         r.rating_matrix(rate_matrix,filename)
         #print rate_matrix[0]
 
+    def genre_correlation(self):
+        f = open(".\ml-100k\u.item", "r")
+        lines = f.readlines()
+        for i in range(19):
+            self.genre_corr[i][i] = 1
+        for line in lines:
+            data = line.split("|")
+            genre = data[5:]
+            for i in range(19):
+                if genre[i] == 1:
+                    for j in range(i+1,19):
+                        if genre[j] == 1:
+                            self.genre_corr[i][j] += 1
+
 
 #d = Data()
 #d.create_rating_matrix()
-
