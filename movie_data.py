@@ -1,4 +1,3 @@
-import numpy as np
 class User:
     def __init__(self,user_id,age,sex,occupation,zipcode):
         self.id = user_id
@@ -89,12 +88,23 @@ class Data:
         for line in lines:
             data = line.split("|")
             genre = data[5:]
+            avg = 0
+            k = 0
+            genre = [int(x) for x in genre]
             for i in range(19):
                 if genre[i] == 1:
                     for j in range(i+1,19):
                         if genre[j] == 1:
                             self.genre_corr[i][j] += 1
+                            self.genre_corr[j][i] += 1
+
+        for i in range(19):
+            avg = sum(self.genre_corr[i])-1
+            if avg != 0:
+                self.genre_corr[i] = [(float(x)/avg)*100 for x in self.genre_corr[i]]
+                self.genre_corr[i][i] = 1
 
 
-#d = Data()
-#d.create_rating_matrix()
+d = Data()
+d.genre_correlation()
+print d.genre_corr
