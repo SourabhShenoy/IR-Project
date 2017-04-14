@@ -102,13 +102,15 @@ class MoviePredict():
             for mov in self.movies:
                 mid = mov.id
                 if self.test[uid][mid] != 0:
-                    pred = self.guess(uid,mid,150)
+                    pred1 = self.guess(uid,mid,150)
+                    pred2 = self.guess2(uid, mid)
+                    pred = 0.9*pred1 + 0.1*pred2
                     error += (pred-self.test[uid][mid]) ** 2
                     cnt += 1
 
         print "RMSE=",(float(error)/cnt)**0.5
 
-    def decide_usergenre(self,top_n=150,genre_no = 3):
+    def decide_usergenre(self,top_n=30,genre_no = 5):
         for user in self.users:
             pg = [0]*len(self.genres)
             res = np.argsort(self.normRating[user.id])[-genre_no:]
@@ -121,7 +123,44 @@ class MoviePredict():
                     pg[r] += 1
 
             user.pref_genre = np.argsort(pg)[-genre_no:]
+            # user.pref_genre = np.argsort(self.normRating[user.id])[-genre_no:]
 
+    def calculate_movieAvgRating(self):
+        for m in self.movies:
+            rating = 0
+            cnt = 0
+            for u in self.users:
+                if self.train[u.id][m.id] != 0:
+                    rating += self.train[u.id][m.id]
+                    cnt += 1
+            if cnt == 0:
+                m.avg_rating = 0
+            else:
+                m.avg_rating = float(rating)/cnt
+
+    def guess2(self,user,movie):
+        up = self.users[user].pref_genre
+        gen = self.movies[movie].genre
+        mg = []
+        for i in range(len(self.genres)):
+            if gen[self.genres[i]] != 0:
+                mg.append(i)
+        # for g in self.genres:
+        #     if gen[g] == 1:
+        #         mg.append(gen[g])
+
+        rating = 0
+        for k in up:
+            for j in mg:
+                rating += self.genre_corr[k][j]
+        rating *= self.movies[movie].avg_rating
+        rate = float(rating)/len(up)
+        if rate < 1.0:
+            return 1.0
+        elif rate > 5.0:
+            return 5.0
+        else:
+            return rate
 
     def load_allData(self):
         self.load_data()
@@ -132,6 +171,10 @@ class MoviePredict():
         self.calculate_pearsonCC()
         # self.get_rmse()
         self.decide_usergenre()
+        self.calculate_movieAvgRating()
+        self.data.genre_correlation()
+        self.genre_corr = self.data.genre_corr
+        self.get_rmse()
 
 obj = MoviePredict()
 obj.load_allData()

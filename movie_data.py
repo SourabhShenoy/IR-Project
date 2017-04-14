@@ -15,6 +15,7 @@ class Movie:
         self.release_date = release_data
         self.imdb_link = imdb_link
         self.genre = genre
+        self.avg_rating = 0
 
 
 class Rating:
@@ -101,7 +102,7 @@ class Data:
         for i in range(19):
             avg = sum(self.genre_corr[i])-1
             if avg != 0:
-                self.genre_corr[i] = [(float(x)/avg)*100 for x in self.genre_corr[i]]
+                self.genre_corr[i] = [(float(x)/avg) for x in self.genre_corr[i]]
                 self.genre_corr[i][i] = 1
 
 
