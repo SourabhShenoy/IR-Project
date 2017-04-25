@@ -1,3 +1,5 @@
+import numpy as np
+import csv
 class User:
     def __init__(self,user_id,age,sex,occupation,zipcode):
         self.id = user_id
@@ -26,8 +28,8 @@ class Rating:
         self.rating = rating
     '''
     def rating_matrix(self,rate_matrix,filename):
-        # f = open(".\ml-100k\u1.base", "r")
         f = open(filename, "r")
+        print filename
         ratings = f.readlines()
         for r in ratings:
             r = r.split("\t")
@@ -40,7 +42,7 @@ class Data:
 
     def user_data(self):
         users = []
-        f = open(".\ml-100k\u.user","r")
+        f = open("./ml-100k/u.user","r")
         lines = f.readlines()
         for line in lines:
             data = line.split("|")
@@ -50,7 +52,7 @@ class Data:
 
     def movies_data(self):
         movies = []
-        f = open(".\ml-100k\u.item","r")
+        f = open("./ml-100k/u.item","r")
         lines = f.readlines()
         # making a movie object
         for line in lines:
@@ -66,7 +68,7 @@ class Data:
         return movies
 
     def get_genres(self):
-        f_genre = open(".\ml-100k\u.genre", "r")
+        f_genre = open("./ml-100k/u.genre", "r")
         genres = []
         # getting all the genres
         lines = f_genre.readlines()
@@ -81,8 +83,18 @@ class Data:
         r.rating_matrix(rate_matrix,filename)
         #print rate_matrix[0]
 
+    def genre_correlation1(self):
+        COLUMN_NUM = 19
+        data = np.genfromtxt('val.csv', delimiter=',')
+        if data.shape[0] % 19 == 0:
+            self.genre_corr = data.reshape((-1, 19))
+        else:
+            data = np.pad(data, (0, COLUMN_NUM - len(data) % COLUMN_NUM), 'constant')
+            self.genre_corr = data.reshape((-1, COLUMN_NUM))
+
+
     def genre_correlation(self):
-        f = open(".\ml-100k\u.item", "r")
+        f = open("./ml-100k/u.item", "r")
         lines = f.readlines()
         for i in range(19):
             self.genre_corr[i][i] = 1

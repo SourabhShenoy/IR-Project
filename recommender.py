@@ -18,8 +18,8 @@ class MoviePredict():
         self.genres = self.data.get_genres()
         self.train = np.zeros((len(self.users),len(self.movies)))
         self.test = np.zeros((len(self.users), len(self.movies)))
-        self.data.create_rating_matrix(self.train,".\ml-100k\u1.base")
-        self.data.create_rating_matrix(self.test,".\ml-100k\u1.test")
+        self.data.create_rating_matrix(self.train,"./ml-100k/u1.base")
+        self.data.create_rating_matrix(self.test,"./ml-100k/u1.test")
 
     def movieClustering(self):
         movie_genre = []
@@ -95,20 +95,36 @@ class MoviePredict():
             return rate
 
     def get_rmse(self):
-        error = 0
+        error = 100.00
         cnt = 0
-        for user in self.users:
-            uid = user.id
-            for mov in self.movies:
-                mid = mov.id
-                if self.test[uid][mid] != 0:
-                    pred1 = self.guess(uid,mid,150)
-                    pred2 = self.guess2(uid, mid)
-                    pred = 0.9*pred1 + 0.1*pred2
-                    error += (pred-self.test[uid][mid]) ** 2
-                    cnt += 1
+        #perc = Perceptron(n_iter=100)
+        train = []
+        train_label = []
+        w_1 = 0.00
+        w_2 = 0.00
+        for i in range(1,100):
+            w1 = float(i)/100
+            w2 = 1.00-w1
+            e = 0.00
+            for user in self.users:
+                uid = user.id
+                for mov in self.movies:
+                    mid = mov.id
+                    if self.test[uid][mid] != 0:
+                        pred1 = self.guess(uid,mid,150)
+                        pred2 = self.guess2(uid, mid)
+                        pred = w1 * pred1 + w2* pred2
+                        #train.append([pred1,pred2])
+                    #train_label.append(self.test[uid][mid])
+                    #pred = 0.9*pred1 + 0.1*pred2
+                        e += (pred-self.test[uid][mid]) ** 2
+                        cnt += 1
 
-        print "RMSE=",(float(error)/cnt)**0.5
+            if (e**0.5)/cnt <= error:
+                w_1 = w1
+                w_2 = w2
+                error = e
+        print w_1,w_2,error
 
     def decide_usergenre(self,top_n=30,genre_no = 5):
         for user in self.users:
@@ -169,7 +185,7 @@ class MoviePredict():
         self.calculate_avgUserRating()
         self.normalize_rating()
         self.calculate_pearsonCC()
-        # self.get_rmse()
+#        self.get_rmse()
         self.decide_usergenre()
         self.calculate_movieAvgRating()
         self.data.genre_correlation()
