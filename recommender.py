@@ -18,8 +18,8 @@ class MoviePredict():
         self.genres = self.data.get_genres()
         self.train = np.zeros((len(self.users),len(self.movies)))
         self.test = np.zeros((len(self.users), len(self.movies)))
-        self.data.create_rating_matrix(self.train,"./ml-100k/u1.base")
-        self.data.create_rating_matrix(self.test,"./ml-100k/u1.test")
+        self.data.create_rating_matrix(self.train,"./ml-100k/ub.base")
+        self.data.create_rating_matrix(self.test,"./ml-100k/ub.test")
 
     def movieClustering(self):
         movie_genre = []
@@ -60,33 +60,48 @@ class MoviePredict():
         norm = [[[] for j in range(len(self.genres))] for i in range(len(self.users))]
         for user in self.users:
             norm[user.id] = [x - user.avg_rating for x in self.ratings[user.id]]
-            # for i in range(len(self.genres)):
-            #     norm[user.id][i] = [x - user.avg_rating for x in self.ratings[user.id]]
 
         self.normRating = norm
 
     def calculate_pearsonCC(self):
         print "Generating Similarity Matrix"
+        maxage = 73
+        minage = 7
         pcs = [[0 for j in range(len(self.users))] for i in range(len(self.users))]
         for userA in self.users:
+            agerange = max(abs(userA.age - minage), abs(userA.age - maxage))
             for userB in self.users:
                 if userA != userB:
-                    rateA = [ x - userA.avg_rating for x in self.ratings[userA.id]]
-                    rateB = [ x - userB.avg_rating for x in self.ratings[userB.id]]
-                    pcs[userA.id][userB.id] = np.dot(rateA,rateB)
-
+                    rateA = [x - userA.avg_rating for x in self.ratings[userA.id]]
+                    rateB = [x - userB.avg_rating for x in self.ratings[userB.id]]
+                    pcs[userA.id][userB.id] = np.dot(rateA, rateB)
+                    # including age bias
+                    # pcs[userA.id][userB.id] *= float(agerange - abs(userA.age - userB.age)) / agerange
+                    # including gender bias
+                    # if userA.sex == userB.sex:
+                    #     pcs[userA.id][userB.id] *= 1.1
+                    # else:
+                    #     pcs[userA.id][userB.id] *= 0.9
         self.pcs = pcs
 
     def guess(self,user,movie,top_n):
         gid = self.movie_cluster[movie]
-        top_similar = np.argsort(self.pcs[user])[-top_n:]
-        s,c = 0,0
+        pearson = self.pcs[user]
+        agerange = max(abs(self.users[user].age - 7), abs(self.users[user].age - 73))
+        for i in range(len(pearson)):
+            pearson[i] *= float(agerange - abs(self.users[user].age - self.users[i].age)) / agerange
+            if self.users[i].sex == self.users[user].sex:
+                pearson[i] *= 1.1
+            else:
+                pearson[i] *= 0.9
+        top_similar = np.argsort(pearson)[-top_n:]
+        s, c = 0, 0
         for t in top_similar:
             if self.normRating[t][gid] != 0:
-                s += self.normRating[t][gid] * self.pcs[user][t]
-                c += self.pcs[user][t]
+                s += self.normRating[t][gid] * pearson[t]
+                c += pearson[t]
 
-        rate = self.users[user].avg_rating + float(s)/c
+        rate = self.users[user].avg_rating + float(s) / c
         if rate < 1.0:
             return 1.0
         elif rate > 5.0:
@@ -95,44 +110,40 @@ class MoviePredict():
             return rate
 
     def get_rmse(self):
-        error = 100.00
+        error = 0.00
         cnt = 0
-        #perc = Perceptron(n_iter=100)
-        train = []
-        train_label = []
-        w_1 = 0.00
-        w_2 = 0.00
-        for i in range(1,100):
-            w1 = float(i)/100
-            w2 = 1.00-w1
-            e = 0.00
-            for user in self.users:
-                uid = user.id
-                for mov in self.movies:
-                    mid = mov.id
-                    if self.test[uid][mid] != 0:
-                        pred1 = self.guess(uid,mid,150)
-                        pred2 = self.guess2(uid, mid)
-                        pred = w1 * pred1 + w2* pred2
-                        #train.append([pred1,pred2])
-                    #train_label.append(self.test[uid][mid])
-                    #pred = 0.9*pred1 + 0.1*pred2
-                        e += (pred-self.test[uid][mid]) ** 2
-                        cnt += 1
+        err1, err2, c1, c2 = 0, 0, 0, 0
 
-            if (e**0.5)/cnt <= error:
-                w_1 = w1
-                w_2 = w2
-                error = e
-        print w_1,w_2,error
+        for user in self.users:
+            uid = user.id
+            for mov in self.movies:
+                mid = mov.id
+                if self.test[uid][mid] != 0:
+                    pred1 = self.guess(uid, mid, 150)
+                    pred2 = self.guess2(uid, mid)
+                    pred = 0.85 * pred1 + 0.15 * pred2
+                    error += (pred - self.test[uid][mid]) ** 2
+                    cnt += 1
+                    err1 += (pred1 - self.test[uid][mid]) ** 2
+                    err2 += (pred2 - self.test[uid][mid]) ** 2
+                    c1 += 1
+                    c2 += 1
 
-    def decide_usergenre(self,top_n=30,genre_no = 5):
+        print "RMSE=", (float(error) / cnt) ** 0.5
+        print "RMSE 1=", (float(err1) / c1) ** 0.5
+        print "RMSE 2=", (float(err2) / c2) ** 0.5
+
+    def decide_usergenre(self,top_n=30,genre_no = 3):
         for user in self.users:
             pg = [0]*len(self.genres)
             res = np.argsort(self.normRating[user.id])[-genre_no:]
             for r in res:
                 pg[r] += 1
-            top_similar = np.argsort(self.pcs[user.id])[-top_n:]
+            pearson = self.pcs[user.id]
+            for i in range(len(pearson)):
+                if self.users[i].sex != self.users[user.id].sex:
+                    pearson[i] *= 0.9
+            top_similar = np.argsort(pearson)[-top_n:]
             for t in top_similar:
                 res = np.argsort(self.normRating[t])[-genre_no:]
                 for r in res:
@@ -185,11 +196,11 @@ class MoviePredict():
         self.calculate_avgUserRating()
         self.normalize_rating()
         self.calculate_pearsonCC()
-#        self.get_rmse()
         self.decide_usergenre()
         self.calculate_movieAvgRating()
         self.data.genre_correlation()
-        self.genre_corr = self.data.genre_corr
+        # self.genre_corr = self.data.genre_corr
+        self.genre_corr = self.data.genre_corr_wordnet()
         self.get_rmse()
 
 obj = MoviePredict()

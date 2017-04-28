@@ -1,5 +1,6 @@
 import numpy as np
-import csv
+from nltk.corpus import wordnet as wn
+
 class User:
     def __init__(self,user_id,age,sex,occupation,zipcode):
         self.id = user_id
@@ -117,6 +118,26 @@ class Data:
                 self.genre_corr[i] = [(float(x)/avg) for x in self.genre_corr[i]]
                 self.genre_corr[i][i] = 1
 
+    def genre_corr_wordnet(self):
+        corr = np.zeros((len(self.genres_list), len(self.genres_list)))
+
+        for i in range(len(self.genres_list)):
+            g1 = wn.synsets(self.genres_list[i])
+            for j in range(len(self.genres_list)):
+                g2 = wn.synsets(self.genres_list[j])
+                maxval = 0
+                for a in g1:
+                    x = wn.synset(a._name)
+                    for b in g2:
+                        y = wn.synset(b._name)
+                        res = x.path_similarity(y)
+                        maxval = max(maxval,res)
+
+                corr[i][j] = maxval
+
+        # print corr
+        # self.genre_corr_word = corr
+        return corr
 
 d = Data()
 d.genre_correlation()
