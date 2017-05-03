@@ -76,24 +76,24 @@ class MoviePredict():
                     rateB = [x - userB.avg_rating for x in self.ratings[userB.id]]
                     pcs[userA.id][userB.id] = np.dot(rateA, rateB)
                     # including age bias
-                    # pcs[userA.id][userB.id] *= float(agerange - abs(userA.age - userB.age)) / agerange
+                    pcs[userA.id][userB.id] *= float(agerange - abs(userA.age - userB.age)) / agerange
                     # including gender bias
-                    # if userA.sex == userB.sex:
-                    #     pcs[userA.id][userB.id] *= 1.1
-                    # else:
-                    #     pcs[userA.id][userB.id] *= 0.9
+                    if userA.sex == userB.sex:
+                        pcs[userA.id][userB.id] *= 1.1
+                    else:
+                        pcs[userA.id][userB.id] *= 0.9
         self.pcs = pcs
 
     def guess(self,user,movie,top_n):
         gid = self.movie_cluster[movie]
         pearson = self.pcs[user]
-        agerange = max(abs(self.users[user].age - 7), abs(self.users[user].age - 73))
-        for i in range(len(pearson)):
-            pearson[i] *= float(agerange - abs(self.users[user].age - self.users[i].age)) / agerange
-            if self.users[i].sex == self.users[user].sex:
-                pearson[i] *= 1.1
-            else:
-                pearson[i] *= 0.9
+        # agerange = max(abs(self.users[user].age - 7), abs(self.users[user].age - 73))
+        # for i in range(len(pearson)):
+        #     pearson[i] *= float(agerange - abs(self.users[user].age - self.users[i].age)) / agerange
+        #     if self.users[i].sex == self.users[user].sex:
+        #         pearson[i] *= 1.1
+        #     else:
+        #         pearson[i] *= 0.9
         top_similar = np.argsort(pearson)[-top_n:]
         s, c = 0, 0
         for t in top_similar:
@@ -140,9 +140,9 @@ class MoviePredict():
             for r in res:
                 pg[r] += 1
             pearson = self.pcs[user.id]
-            for i in range(len(pearson)):
-                if self.users[i].sex != self.users[user.id].sex:
-                    pearson[i] *= 0.9
+            # for i in range(len(pearson)):
+            #     if self.users[i].sex != self.users[user.id].sex:
+            #         pearson[i] *= 0.9
             top_similar = np.argsort(pearson)[-top_n:]
             for t in top_similar:
                 res = np.argsort(self.normRating[t])[-genre_no:]

@@ -30,7 +30,6 @@ class Rating:
     '''
     def rating_matrix(self,rate_matrix,filename):
         f = open(filename, "r")
-        print filename
         ratings = f.readlines()
         for r in ratings:
             r = r.split("\t")
@@ -80,9 +79,7 @@ class Data:
 
     def create_rating_matrix(self,rate_matrix,filename):
         r = Rating()
-        #rate_matrix = np.zeros((943, 1682))
         r.rating_matrix(rate_matrix,filename)
-        #print rate_matrix[0]
 
     def genre_correlation1(self):
         COLUMN_NUM = 19
@@ -135,10 +132,4 @@ class Data:
 
                 corr[i][j] = maxval
 
-        # print corr
-        # self.genre_corr_word = corr
         return corr
-
-d = Data()
-d.genre_correlation()
-print d.genre_corr
